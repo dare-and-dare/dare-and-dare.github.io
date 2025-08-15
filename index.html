@@ -73,7 +73,7 @@
             min-height: 114px;
             border-radius: 12px;
             cursor: pointer;
-            transition: all 0.2s ease-in-out; /* Faster transition for snappy feel */
+            transition: all 0.2s ease-in-out;
             user-select: none;
             position: relative;
             perspective: 1000px;
@@ -164,7 +164,6 @@
             border: 2px solid #fce7f3;
         }
 
-        /* NEW HOVER EFFECT FOR OVERLAPPED CARDS */
         body.is-my-turn #player-hand .card:hover {
             transform: translateY(-20px) scale(1.05);
             z-index: 100;
@@ -577,9 +576,7 @@
             elements.opponentHand.innerHTML = '';
             const cardCount = hand.length;
             if (cardCount === 0) return;
-
             const totalArcAngle = Math.min(cardCount * 10, 80);
-
             hand.forEach((cardData, index) => {
                 const cardElement = createCardElement(cardData, true);
                 const rotation = (index - (cardCount - 1) / 2) * (totalArcAngle / cardCount);
@@ -633,22 +630,37 @@
             }
 
             // DYNAMIC HAND RENDERING LOGIC
-            const handCount = playerState ? playerState.hand.length : 0;
-            let marginLeft = '8px'; // Default spacing for 1-3 cards
-            if (handCount === 4) {
-                marginLeft = '-50px';
-            } else if (handCount >= 5) {
-                marginLeft = '-70px';
+            if (playerState && playerState.hand.length > 0) {
+                const handCount = playerState.hand.length;
+                const containerWidth = elements.playerHand.offsetWidth;
+
+                const cardMinWidth = 80;
+                const cardMaxWidth = 120;
+                const cardWidthVW = 22;
+                const calculatedVWwidth = (window.innerWidth * cardWidthVW) / 100;
+                const cardWidth = Math.max(cardMinWidth, Math.min(calculatedVWwidth, cardMaxWidth));
+
+                const defaultMargin = 8;
+                let marginLeft = `${defaultMargin}px`;
+
+                const totalCardsWidth = (handCount * cardWidth) + ((handCount - 1) * defaultMargin);
+
+                if (totalCardsWidth > containerWidth) {
+                    const newMargin = (containerWidth - (handCount * cardWidth)) / (handCount - 1);
+                    const minMargin = - (cardWidth * 0.75); // Overlap up to 75% of the card
+                    marginLeft = `${Math.max(newMargin, minMargin)}px`;
+                }
+
+                playerState.hand.forEach((cardData, index) => {
+                    const cardElement = createCardElement(cardData, false);
+                    cardElement.addEventListener('click', () => playCard(cardData.instanceId));
+                    if (index > 0) {
+                        cardElement.style.marginLeft = marginLeft;
+                    }
+                    elements.playerHand.appendChild(cardElement);
+                });
             }
 
-            if (playerState) playerState.hand.forEach((cardData, index) => {
-                const cardElement = createCardElement(cardData, false);
-                cardElement.addEventListener('click', () => playCard(cardData.instanceId));
-                if (index > 0) {
-                    cardElement.style.marginLeft = marginLeft;
-                }
-                elements.playerHand.appendChild(cardElement);
-            });
 
             if (opponentState) {
                 renderOpponentHandAsArc(opponentState.hand);
