@@ -1,0 +1,795 @@
+﻿<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>חובה וחובה</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="images/heart_logo.png">
+
+    <style>
+        body {
+            font-family: 'Assistant', sans-serif;
+            overflow: hidden;
+            background: linear-gradient(135deg, #4a0e2e 0%, #1d1d4e 100%);
+            position: relative;
+        }
+
+        #background-logo {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-image: url('/images/logo.png');
+            background-size: contain;
+            background-position: center;
+            background-repeat: no-repeat;
+            opacity: 0.05;
+            z-index: -2;
+        }
+
+        #hearts-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: -1;
+        }
+
+        .heart {
+            position: absolute;
+            bottom: -50px;
+            font-size: 2rem;
+            color: rgba(255, 255, 255, 0.2);
+            animation: floatUp linear infinite;
+        }
+
+        @keyframes floatUp {
+            0% {
+                transform: translateY(0) translateX(0);
+                opacity: 1;
+            }
+
+            100% {
+                transform: translateY(-110vh) translateX(50px);
+                opacity: 0;
+            }
+        }
+
+        .card {
+            width: 120px;
+            height: 170px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease-in-out;
+            user-select: none;
+            position: relative;
+            perspective: 1000px;
+        }
+
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+
+        .card.is-flipped .card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .card-front {
+            background-color: #fff0f5;
+            color: #333;
+            border: 3px solid;
+            align-items: center;
+            justify-content: center;
+            transform: rotateY(180deg);
+        }
+
+            .card-front .card-type-header {
+                font-weight: 700;
+                font-size: 0.8rem;
+                padding-bottom: 5px;
+                margin-bottom: 5px;
+                width: 100%;
+                border-bottom: 1px solid;
+            }
+
+        .card-type-שאלה {
+            border-color: #3b82f6;
+        }
+
+            .card-type-שאלה .card-type-header {
+                color: #3b82f6;
+                border-color: #bfdbfe;
+            }
+
+        .card-type-משימה {
+            border-color: #ec4899;
+        }
+
+            .card-type-משימה .card-type-header {
+                color: #ec4899;
+                border-color: #fbcfe8;
+            }
+
+        .card-type-סוד {
+            border-color: #8b5cf6;
+        }
+
+            .card-type-סוד .card-type-header {
+                color: #8b5cf6;
+                border-color: #ddd6fe;
+            }
+
+        .card-front p {
+            font-size: 0.9rem;
+            word-wrap: break-word;
+            line-height: 1.3;
+        }
+
+        .card-back {
+            background-image: url('/images/logo.png');
+            background-size: cover;
+            background-position: center;
+            border: 2px solid #fce7f3;
+        }
+
+        body.is-my-turn #player-hand .card:hover {
+            transform: translateY(-20px) scale(1.05);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        body:not(.is-my-turn) #player-hand .card {
+            cursor: not-allowed;
+        }
+
+        body:not(.is-my-turn) #deck {
+            cursor: not-allowed;
+        }
+
+        #deck {
+            position: relative;
+            width: 120px;
+            height: 170px;
+        }
+
+            #deck .card {
+                position: absolute;
+                top: 0;
+                left: 0;
+            }
+
+                #deck .card:nth-child(2) {
+                    transform: translate(2px, 2px);
+                }
+
+                #deck .card:nth-child(3) {
+                    transform: translate(4px, 4px);
+                }
+
+                #deck .card:nth-child(4) {
+                    transform: translate(6px, 6px);
+                }
+
+        #play-area {
+            position: relative;
+        }
+
+            #play-area .card {
+                position: absolute;
+            }
+
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #be185d;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        #toast-notification {
+            position: fixed;
+            bottom: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 24px;
+            border-radius: 9999px;
+            color: white;
+            font-size: 1rem;
+            z-index: 50;
+            transition: all 0.5s ease-in-out;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+
+            #toast-notification.show {
+                bottom: 20px;
+            }
+
+        .toast-info {
+            background-color: #3b82f6;
+        }
+
+        .toast-warning {
+            background-color: #f59e0b;
+        }
+
+        .toast-success {
+            background-color: #22c55e;
+        }
+
+        #opponent-hand {
+            position: relative;
+        }
+
+            #opponent-hand .card {
+                position: absolute;
+                left: 50%;
+                bottom: 10px;
+                transform-origin: bottom center;
+            }
+    </style>
+</head>
+<body class="text-white flex flex-col items-center justify-center min-h-screen p-4">
+
+    <div id="background-logo"></div>
+    <div id="hearts-container"></div>
+    <div id="toast-notification"></div>
+
+    <div id="rules-modal" class="hidden fixed inset-0 z-30 flex items-center justify-center bg-black bg-opacity-70 backdrop-blur-sm p-4">
+        <div class="bg-gray-800 text-white p-8 rounded-2xl shadow-xl max-w-lg w-full border border-pink-500 relative">
+            <h2 class="text-3xl font-bold text-pink-300 mb-4 text-center">איך משחקים?</h2>
+            <div class="space-y-4 text-gray-300 max-h-[70vh] overflow-y-auto pr-2">
+                <div>
+                    <h3 class="font-semibold text-pink-200 text-lg">מהלך התור:</h3>
+                    <p>בכל תור, עומדת בפניך <strong>פעולה אחת</strong>: למשוך קלף מהקופה, או לשחק קלף מהיד שלך למרכז השולחן.</p>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-pink-200 text-lg">סוגי הקלפים:</h3>
+                    <ul class="list-disc list-inside space-y-2 mt-2">
+                        <li><strong class="text-blue-300">שאלה:</strong> קלפים כחולים. ענו על השאלה יחד או שתפו את מחשבותיכם.</li>
+                        <li><strong class="text-pink-300">משימה:</strong> קלפים ורודים. בצעו את המשימה שעל הקלף עבור הפרטנר שלכם.</li>
+                        <li><strong class="text-purple-300">סוד:</strong> קלפים סגולים. זוהי משימה סודית שעליכם לבצע מבלי שהפרטנר ישים לב.</li>
+                    </ul>
+                </div>
+                <p class="font-bold text-yellow-300 p-3 bg-gray-700/50 rounded-lg">
+                    <strong class="text-purple-300">⭐ כלל מיוחד לקלף סוד:</strong>
+                    כשאת/ה משחק/ת קלף <strong>סוד</strong>, תורך לא מסתיים! את/ה מקבל/ת <strong>פעולה נוספת</strong> באותו התור.
+                </p>
+                <p class="font-bold text-green-300 p-3 bg-gray-700/50 rounded-lg">
+                    <strong>🏁 איך מנצחים?</strong><br />
+                    לא מנצחים! היא תמיד צודקת והמנצחת!
+                </p>
+            </div>
+            <button id="close-rules-btn" class="absolute top-4 left-4 text-gray-400 hover:text-white text-2xl">&times;</button>
+        </div>
+    </div>
+
+    <div id="home-screen" class="w-full h-full flex flex-col items-center justify-center text-center">
+        <h1 class="text-5xl font-bold text-pink-300 mb-4">חובה וחובה - גרסת הזוגות</h1>
+        <p class="text-gray-300 mb-6 max-w-md px-4">צרו חדר פרטי ושתפו את הקוד עם הפרטנר כדי להתחיל לשחק.</p>
+        <div class="bg-gray-800/50 p-6 rounded-lg shadow-lg w-full max-w-sm">
+            <p id="auth-status" class="text-yellow-400 mb-4 text-sm">מתחבר...</p>
+            <input id="player-name-input" type="text" placeholder="הכניסו את שמכם" class="bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white w-full mb-3 text-center text-lg">
+            <input id="room-id-input" type="text" placeholder="הכניסו קוד חדר" class="bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white w-full mb-3 text-center text-lg">
+            <button id="join-room-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg w-full mb-3 disabled:opacity-50 disabled:cursor-not-allowed" disabled>הצטרף לחדר</button>
+            <button id="create-room-btn" class="bg-pink-600 hover:bg-pink-700 text-white font-bold py-3 px-4 rounded-lg w-full disabled:opacity-50 disabled:cursor-not-allowed" disabled>צור חדר<p style="font-size: 12px">(לעיתים ייקח עד 10 שניות)</p></button>
+            <button id="rules-btn" class="mt-4 text-pink-200 bg-pink-500/10 hover:bg-pink-500/20 border border-pink-500/30 font-semibold py-2 px-6 rounded-lg w-full transition-colors">
+                איך משחקים?
+            </button>
+        </div>
+    </div>
+
+    <div id="ai-loading-overlay" class="hidden fixed inset-0 z-20 flex-col items-center justify-center bg-gray-900/80 backdrop-blur-sm">
+        <div class="bg-gray-800/80 p-8 rounded-lg shadow-xl text-center border border-pink-500">
+            <div class="loader mb-4 mx-auto"></div>
+            <h2 class="text-2xl font-bold text-pink-300">יוצר קלפים בעזרת בינה מלאכותית...</h2>
+            <p id="loading-timer" class="text-gray-400 mt-2">זמן שחלף: 0ש</p>
+        </div>
+    </div>
+
+    <div id="game-over-modal" class="hidden fixed inset-0 z-30 flex items-center justify-center bg-black bg-opacity-70 backdrop-blur-sm">
+        <div class="bg-gray-800 p-8 rounded-lg shadow-xl text-center border border-green-500">
+            <h3 class="text-3xl font-bold mb-4 text-green-300">המשחק הסתיים!</h3>
+            <button id="go-home-after-game-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg">חזור חזרה</button>
+        </div>
+    </div>
+
+    <div id="game-container" class="hidden w-full h-full flex-col items-center justify-between max-w-7xl mx-auto">
+        <div id="opponent-left-modal" class="hidden fixed inset-0 z-20 flex items-center justify-center bg-gray-900/80 backdrop-blur-sm">
+            <div class="bg-gray-800 p-8 rounded-lg shadow-xl text-center border border-red-500">
+                <h3 class="text-2xl font-bold mb-4 text-red-400">הפרטנר התנתק</h3>
+                <p class="text-gray-300 mb-6">הפרטנר עזב את המשחק.</p>
+                <button id="go-home-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg">חזור למסך הראשי</button>
+            </div>
+        </div>
+
+        <div class="absolute top-4 right-4 bg-gray-800/50 p-3 rounded-lg shadow-lg text-center">
+            <h2 class="text-lg font-bold mb-2">קוד חדר</h2>
+            <div id="room-id-display" class="bg-gray-700 text-pink-300 font-mono px-4 py-2 rounded-md text-xl tracking-widest"></div>
+        </div>
+
+        <div id="player-info" class="absolute top-4 left-4 bg-gray-800/50 p-3 rounded-lg shadow-lg text-left text-sm">
+            <h2 class="text-lg font-bold mb-2 text-center">שחקנים</h2>
+            <div><strong>את/ה:</strong> <span id="your-name" class="font-mono text-blue-300"></span></div>
+            <div><strong>פרטנר:</strong> <span id="opponent-name" class="font-mono text-red-300">ממתין...</span></div>
+        </div>
+
+        <div id="turn-indicator" class="absolute top-6 text-xl font-bold text-yellow-300"></div>
+
+        <div id="opponent-hand" class="h-48 flex justify-center items-start p-4"></div>
+        <div id="play-area" class="w-full h-64 bg-gray-800/50 rounded-2xl border-2 border-dashed border-gray-600 flex items-center justify-center p-4 my-4"></div>
+
+        <div class="w-full flex justify-between items-end p-4">
+            <div id="player-hand" class="h-48 flex-grow flex justify-center items-end space-x-2"></div>
+            <div id="deck-area" class="flex flex-col items-center">
+                <div id="deck" class="mb-2"></div>
+                <div id="deck-counter" class="text-lg font-semibold">0 קלפים</div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="fixed bottom-0 left-0 w-full p-2 text-center text-gray-400 text-sm">
+        נוצר על ידי לב בשביל הילית
+    </footer>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot, updateDoc, arrayUnion, deleteDoc, deleteField } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDLpWqy6RzBd5VQrfK7T94FQAseXTbjJSg",
+            authDomain: "hilit-a2e48.firebaseapp.com",
+            projectId: "hilit-a2e48",
+            storageBucket: "hilit-a2e48.appspot.com",
+            messagingSenderId: "337097539085",
+            appId: "1:337097539085:web:e8b516719a14d14eec5f44"
+        };
+
+        let app, auth, db, userId, gameUnsubscribe = null, currentRoomId = null, gameHasStartedWithTwoPlayers = false, heartbeatInterval = null, loadingTimerInterval = null, toastTimeout = null;
+
+        const CARD_TYPES = { QUESTION: 'שאלה', ASSIGNMENT: 'משימה', SECRET: 'סוד' };
+
+        const elements = {
+            deck: document.getElementById('deck'), deckCounter: document.getElementById('deck-counter'),
+            playerHand: document.getElementById('player-hand'), opponentHand: document.getElementById('opponent-hand'),
+            playArea: document.getElementById('play-area'), createRoomBtn: document.getElementById('create-room-btn'),
+            joinRoomBtn: document.getElementById('join-room-btn'), roomIdInput: document.getElementById('room-id-input'),
+            roomIdDisplay: document.getElementById('room-id-display'), authStatus: document.getElementById('auth-status'),
+            yourNameSpan: document.getElementById('your-name'), opponentNameSpan: document.getElementById('opponent-name'),
+            opponentLeftModal: document.getElementById('opponent-left-modal'), goHomeBtn: document.getElementById('go-home-btn'),
+            homeScreen: document.getElementById('home-screen'), gameContainer: document.getElementById('game-container'),
+            aiLoadingOverlay: document.getElementById('ai-loading-overlay'), loadingTimer: document.getElementById('loading-timer'),
+            playerNameInput: document.getElementById('player-name-input'), rulesBtn: document.getElementById('rules-btn'),
+            rulesModal: document.getElementById('rules-modal'), closeRulesBtn: document.getElementById('close-rules-btn'),
+            turnIndicator: document.getElementById('turn-indicator'),
+            toast: document.getElementById('toast-notification'),
+            gameOverModal: document.getElementById('game-over-modal'),
+            goHomeAfterGameBtn: document.getElementById('go-home-after-game-btn'),
+        };
+
+        const fallbackCards = [
+            { text: "מהו הזיכרון המשותף הראשון שאתם זוכרים?", type: CARD_TYPES.QUESTION }, { text: "מה הדבר שהכי הצחיק אתכם שעשיתם יחד?", type: CARD_TYPES.QUESTION }, { text: "מהו החלום הכי גדול שלך כרגע?", type: CARD_TYPES.QUESTION }, { text: "אם היית חיה, איזו חיה היית בוחר/ת להיות?", type: CARD_TYPES.QUESTION }, { text: "מהו הדבר שאת/ה הכי מעריך/ה בי?", type: CARD_TYPES.QUESTION },
+            { text: "עסה את כפות הרגליים של הפרטנר למשך דקה.", type: CARD_TYPES.ASSIGNMENT }, { text: "לחש 3 דברים שאת/ה אוהב/ת בו/בה באוזן.", type: CARD_TYPES.ASSIGNMENT }, { text: "הכן/הכיני לפרטנר משקה שהוא/היא אוהב/ת.", type: CARD_TYPES.ASSIGNMENT }, { text: "בחרו שיר ורקדו לצליליו כאילו אף אחד לא רואה.", type: CARD_TYPES.ASSIGNMENT }, { text: "תן/י לפרטנר נשיקה במקום הכי לא צפוי.", type: CARD_TYPES.ASSIGNMENT },
+            { text: "גע/י בשיער של הפרטנר בעדינות מבלי שיבחין/תבחין.", type: CARD_TYPES.SECRET }, { text: "החבא/החביאי פתק אהבה קטן בכיס של הפרטנר.", type: CARD_TYPES.SECRET }, { text: "שלח/י הודעה מתוקה לטלפון של הפרטנר.", type: CARD_TYPES.SECRET }, { text: "החמא/י לפרטנר על משהו כשהוא/היא לא מצפה.", type: CARD_TYPES.SECRET }, { text: "שים/שימי את היד על הלב שלך כשהפרטנר מסתכל עליך.", type: CARD_TYPES.SECRET }
+        ];
+
+        function showToast(message, type = 'info', duration = 3000) {
+            if (toastTimeout) clearTimeout(toastTimeout);
+            elements.toast.textContent = message;
+            elements.toast.className = 'toast-info';
+            elements.toast.classList.add(`toast-${type}`);
+            elements.toast.classList.add('show');
+            toastTimeout = setTimeout(() => {
+                elements.toast.classList.remove('show');
+            }, duration);
+        }
+
+        async function generateCards() {
+            const prompt = `צור 30 קלפים למשחק זוגי בעברית, בפורמט JSON. כל אובייקט בקלף חייב להכיל 'text' ו-'type'. השתמש בסוגים: "שאלה", "משימה", ו"סוד". צור בערך 10 קלפים מכל סוג. "שאלה" - שאלות שמעוררות שיחה. "משימה" - משימות רומנטיות או שובבות לביצוע יחד. "סוד" - משימות שצריך לבצע בלי שהשני ישים לב. כל טקסט חייב להיות קצר, עד 15 מילים.`;
+            const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json", responseSchema: { type: "ARRAY", items: { type: "OBJECT", properties: { "text": { "type": "STRING" }, "type": { "type": "STRING" } }, required: ["text", "type"] } } } };
+            const apiKey = "AIzaSyDPHa7RzXYbgaVY-lCFwW0JE2Mh3OptJ6Y";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+            try {
+                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
+                const result = await response.json();
+                const cards = JSON.parse(result.candidates[0].content.parts[0].text);
+                if (!cards || cards.length === 0) throw new Error("AI returned empty cards.");
+                return cards;
+            } catch (error) {
+                console.warn("AI card generation failed, using fallback cards.", error);
+                return fallbackCards;
+            }
+        }
+
+        async function createRoom() {
+            const playerName = elements.playerNameInput.value.trim();
+            if (!playerName) { showToast("אנא הכניסו את שמכם.", 'warning'); return; }
+            if (!userId) return;
+            elements.createRoomBtn.disabled = true; elements.joinRoomBtn.disabled = true;
+            elements.aiLoadingOverlay.classList.remove('hidden'); elements.aiLoadingOverlay.classList.add('flex');
+            let seconds = 0;
+            loadingTimerInterval = setInterval(() => { seconds++; elements.loadingTimer.textContent = `זמן שחלף: ${seconds}ש`; }, 1000);
+            const cards = await generateCards();
+            clearInterval(loadingTimerInterval); loadingTimerInterval = null;
+            const roomId = generateRoomId();
+            const gameRef = doc(db, 'games', roomId);
+            const deck = shuffleDeck(cards.map((card, index) => ({ id: index + 1, ...card, instanceId: crypto.randomUUID() })));
+            const gameData = {
+                players: { [userId]: { name: playerName, hand: [], lastSeen: new Date() } },
+                deck: deck, playArea: [], hostId: userId, createdAt: new Date(),
+                turn: { currentPlayerId: userId, turnNumber: 1 },
+                gameState: 'playing' // Initial game state
+            };
+            try {
+                await setDoc(gameRef, gameData);
+                joinRoom(roomId);
+            } catch (error) {
+                console.error("Error creating room: ", error);
+                elements.aiLoadingOverlay.classList.add('hidden'); elements.aiLoadingOverlay.classList.remove('flex');
+                elements.createRoomBtn.disabled = false; elements.joinRoomBtn.disabled = false;
+            }
+        }
+
+        function initializeGame() {
+            const savedName = localStorage.getItem('couplesDarePlayerName');
+            if (savedName) elements.playerNameInput.value = savedName;
+            elements.playerNameInput.addEventListener('keyup', () => localStorage.setItem('couplesDarePlayerName', elements.playerNameInput.value.trim()));
+            createFloatingHearts();
+            try {
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app); auth = getAuth(app);
+                onAuthStateChanged(auth, user => {
+                    if (user) {
+                        userId = user.uid;
+                        elements.authStatus.textContent = "מחובר!"; elements.authStatus.style.color = '#a7f3d0';
+                        elements.createRoomBtn.disabled = false; elements.joinRoomBtn.disabled = false;
+                    } else {
+                        signInAnonymously(auth).catch(error => {
+                            elements.authStatus.textContent = "החיבור נכשל!"; elements.authStatus.style.color = '#f87171';
+                        });
+                    }
+                });
+            } catch (error) {
+                showToast("לא ניתן להתחבר לשירות המשחק.", 'warning');
+                elements.authStatus.textContent = "שגיאה!"; elements.authStatus.style.color = '#f87171';
+            }
+        }
+
+        async function joinRoom(roomId) {
+            const playerName = elements.playerNameInput.value.trim();
+            if (!playerName) { showToast("אנא הכניסו את שמכם לפני הצטרפות.", 'warning'); return; }
+            if (!userId || !roomId) return;
+            const gameRef = doc(db, 'games', roomId);
+            const gameSnap = await getDoc(gameRef);
+            if (gameSnap.exists()) {
+                const gameData = gameSnap.data();
+                if (Object.keys(gameData.players).length >= 2 && !gameData.players[userId]) {
+                    showToast("החדר מלא.", 'warning'); return;
+                }
+                if (!gameData.players[userId]) {
+                    await updateDoc(gameRef, { [`players.${userId}`]: { name: playerName, hand: [], lastSeen: new Date() } });
+                }
+                currentRoomId = roomId;
+                subscribeToGameUpdates(roomId); startHeartbeat();
+                elements.roomIdDisplay.textContent = roomId;
+                elements.homeScreen.classList.add('hidden');
+                elements.aiLoadingOverlay.classList.add('hidden'); elements.aiLoadingOverlay.classList.remove('flex');
+                elements.gameContainer.classList.remove('hidden');
+                elements.gameContainer.classList.add('flex');
+            } else {
+                showToast("החדר לא נמצא!", 'warning');
+            }
+        }
+
+        async function leaveRoom() {
+            stopHeartbeat();
+            if (!currentRoomId || !userId) return;
+            const gameRef = doc(db, 'games', currentRoomId);
+            const gameSnap = await getDoc(gameRef);
+            if (gameSnap.exists()) {
+                const playerCount = Object.keys(gameSnap.data().players).length;
+                if (playerCount <= 1) await deleteDoc(gameRef);
+                else await updateDoc(gameRef, { [`players.${userId}`]: deleteField() });
+            }
+            currentRoomId = null;
+        }
+
+        function subscribeToGameUpdates(roomId) {
+            if (gameUnsubscribe) gameUnsubscribe();
+            const gameRef = doc(db, 'games', roomId);
+            gameUnsubscribe = onSnapshot(gameRef, (doc) => {
+                if (!doc.exists()) {
+                    if (!elements.opponentLeftModal.classList.contains('hidden')) return;
+                    showToast("חדר המשחק נסגר.", 'info');
+                    setTimeout(() => window.location.reload(), 2000); return;
+                }
+                renderGameState(doc.data());
+            });
+        }
+
+        async function endTurn() {
+            if (!currentRoomId) return;
+            const gameRef = doc(db, 'games', currentRoomId);
+            const gameSnap = await getDoc(gameRef);
+            if (gameSnap.exists()) {
+                const gameData = gameSnap.data();
+                if (gameData.gameState === 'finished') return;
+
+                const playerIds = Object.keys(gameData.players);
+                const opponentId = playerIds.find(id => id !== userId);
+                let nextPlayerId = opponentId;
+
+                if (gameData.deck.length === 0 && playerIds.length === 2) {
+                    const myHand = gameData.players[userId].hand;
+                    const opponentHand = gameData.players[opponentId].hand;
+                    if (myHand.length === 0 && opponentHand.length > 0) {
+                        nextPlayerId = opponentId;
+                    } else if (opponentHand.length === 0 && myHand.length > 0) {
+                        nextPlayerId = userId;
+                    }
+                }
+
+                await updateDoc(gameRef, { 'turn.currentPlayerId': nextPlayerId, 'turn.turnNumber': gameData.turn.turnNumber + 1 });
+            }
+        }
+
+        function renderOpponentHandAsArc(hand) {
+            elements.opponentHand.innerHTML = '';
+            const cardCount = hand.length;
+            if (cardCount === 0) return;
+
+            const totalArcAngle = Math.min(cardCount * 10, 80);
+
+            hand.forEach((cardData, index) => {
+                const cardElement = createCardElement(cardData, true);
+                const rotation = (index - (cardCount - 1) / 2) * (totalArcAngle / cardCount);
+                cardElement.style.transform = `translateX(-50%) rotate(${rotation}deg)`;
+                elements.opponentHand.appendChild(cardElement);
+            });
+        }
+
+        function renderGameState(gameData) {
+            if (gameData.gameState === 'finished') {
+                elements.gameContainer.style.filter = 'blur(5px)';
+                elements.gameOverModal.classList.remove('hidden');
+                return;
+            }
+
+            const playerIds = Object.keys(gameData.players);
+            const opponentId = playerIds.find(id => id !== userId);
+
+            if (opponentId) {
+                const opponentData = gameData.players[opponentId];
+                if (opponentData.lastSeen) {
+                    const secondsSinceLastSeen = (new Date().getTime() - opponentData.lastSeen.toDate().getTime()) / 1000;
+                    if (secondsSinceLastSeen > 15) { removeOpponent(opponentId); return; }
+                }
+            }
+            if (playerIds.length === 2) gameHasStartedWithTwoPlayers = true;
+            if (gameHasStartedWithTwoPlayers && playerIds.length < 2 && playerIds.includes(userId)) {
+                elements.opponentLeftModal.classList.remove('hidden'); elements.opponentLeftModal.classList.add('flex');
+                return;
+            }
+
+            elements.playerHand.innerHTML = '';
+            elements.playArea.innerHTML = '';
+
+            const playerState = gameData.players[userId];
+            const opponentState = opponentId ? gameData.players[opponentId] : null;
+
+            if (playerState) elements.yourNameSpan.textContent = playerState.name;
+            elements.opponentNameSpan.textContent = opponentState ? opponentState.name : 'ממתין...';
+
+            if (gameData.turn && opponentState) {
+                if (gameData.turn.currentPlayerId === userId) {
+                    elements.turnIndicator.textContent = "התור שלך!";
+                    document.body.classList.add('is-my-turn');
+                } else {
+                    elements.turnIndicator.textContent = `התור של ${opponentState.name}...`;
+                    document.body.classList.remove('is-my-turn');
+                }
+            } else {
+                elements.turnIndicator.textContent = "ממתינים לשחקן נוסף...";
+            }
+
+            if (playerState) playerState.hand.forEach(cardData => {
+                const cardElement = createCardElement(cardData, false);
+                cardElement.addEventListener('click', () => playCard(cardData.instanceId));
+                elements.playerHand.appendChild(cardElement);
+            });
+
+            if (opponentState) {
+                renderOpponentHandAsArc(opponentState.hand);
+            } else {
+                elements.opponentHand.innerHTML = '';
+            }
+
+            gameData.playArea.forEach(cardData => {
+                const cardElement = createCardElement(cardData, false);
+                const randomRotation = (Math.random() - 0.5) * 15;
+                cardElement.style.transform = `rotate(${randomRotation}deg)`;
+                elements.playArea.appendChild(cardElement);
+            });
+            renderDeck(gameData.deck.length, playerIds.length);
+        }
+
+        async function drawCard() {
+            if (!currentRoomId) return;
+            const gameRef = doc(db, 'games', currentRoomId);
+            const gameSnap = await getDoc(gameRef);
+            if (gameSnap.exists()) {
+                const gameData = gameSnap.data();
+                if (Object.keys(gameData.players).length < 2) {
+                    showToast("יש להמתין לשחקן נוסף...", 'info');
+                    return;
+                }
+                if (gameData.turn.currentPlayerId !== userId) { showToast("זה לא התור שלך!", 'warning'); return; }
+                if (gameData.deck.length > 0) {
+                    const playerHand = gameData.players[userId].hand;
+                    if (playerHand.length >= 5) { showToast("היד שלך מלאה! (עד 5 קלפים)", 'warning'); return; }
+                    const newDeck = [...gameData.deck];
+                    const drawnCard = newDeck.pop();
+                    playerHand.push(drawnCard);
+                    await updateDoc(gameRef, { deck: newDeck, [`players.${userId}.hand`]: playerHand });
+                    await endTurn();
+                } else {
+                    showToast("הקופה ריקה!", 'info');
+                }
+            }
+        }
+
+        async function playCard(cardInstanceId) {
+            if (!currentRoomId) return;
+            const gameRef = doc(db, 'games', currentRoomId);
+            const gameSnap = await getDoc(gameRef);
+            if (gameSnap.exists()) {
+                const gameData = gameSnap.data();
+                if (Object.keys(gameData.players).length < 2) {
+                    showToast("יש להמתין לשחקן נוסף...", 'info');
+                    return;
+                }
+                if (gameData.turn.currentPlayerId !== userId) { showToast("זה לא התור שלך!", 'warning'); return; }
+                const playerHand = gameData.players[userId].hand;
+                const cardToPlay = playerHand.find(c => c.instanceId === cardInstanceId);
+                if (cardToPlay) {
+                    const newHand = playerHand.filter(c => c.instanceId !== cardInstanceId);
+                    const opponentId = Object.keys(gameData.players).find(id => id !== userId);
+                    const opponentHand = gameData.players[opponentId].hand;
+
+                    let updates = {
+                        [`players.${userId}.hand`]: newHand,
+                        playArea: arrayUnion(cardToPlay)
+                    };
+
+                    // Check for game over condition
+                    if (newHand.length === 0 && gameData.deck.length === 0 && opponentHand.length === 0) {
+                        updates.gameState = 'finished';
+                    }
+
+                    await updateDoc(gameRef, updates);
+
+                    if (updates.gameState !== 'finished') {
+                        if (cardToPlay.type !== CARD_TYPES.SECRET) {
+                            await endTurn();
+                        } else {
+                            showToast("שיחקת קלף סוד! קח/י פעולה נוספת.", 'success');
+                        }
+                    }
+                }
+            }
+        }
+
+        function startHeartbeat() {
+            stopHeartbeat();
+            heartbeatInterval = setInterval(() => {
+                if (currentRoomId && userId) {
+                    const gameRef = doc(db, 'games', currentRoomId);
+                    updateDoc(gameRef, { [`players.${userId}.lastSeen`]: new Date() }).catch(err => { });
+                }
+            }, 5000);
+        }
+
+        function stopHeartbeat() { if (heartbeatInterval) clearInterval(heartbeatInterval); heartbeatInterval = null; }
+
+        async function removeOpponent(opponentId) {
+            if (!currentRoomId) return;
+            const gameRef = doc(db, 'games', currentRoomId);
+            await updateDoc(gameRef, { [`players.${opponentId}`]: deleteField() });
+        }
+
+        function createCardElement(cardData, isHidden) {
+            const card = document.createElement('div');
+            card.className = `card ${isHidden ? '' : 'is-flipped'}`;
+            if (cardData.instanceId) card.dataset.cardInstanceId = cardData.instanceId;
+            const cardTypeClass = cardData.type ? `card-type-${cardData.type}` : '';
+            card.innerHTML = `<div class="card-inner"><div class="card-face card-front ${cardTypeClass}">${cardData.type ? `<div class="card-type-header">${cardData.type}</div>` : ''}<p>${cardData.text}</p></div><div class="card-face card-back"></div></div>`;
+            return card;
+        }
+
+        function renderDeck(count, playerCount) {
+            elements.deck.innerHTML = '';
+            elements.deckCounter.textContent = `${count} קלפים`;
+            if (count > 0) {
+                for (let i = 0; i < Math.min(count, 4); i++) {
+                    const cardBack = createCardElement({ text: '' }, true);
+                    elements.deck.appendChild(cardBack);
+                }
+                if (playerCount >= 2) {
+                    elements.deck.onclick = drawCard;
+                } else {
+                    elements.deck.onclick = () => showToast("יש להמתין לשחקן נוסף...", 'info');
+                }
+            } else {
+                elements.deck.onclick = null;
+                elements.deckCounter.textContent = 'קופה ריקה';
+            }
+        }
+
+        function generateRoomId() { return Math.random().toString(36).substring(2, 8).toUpperCase(); }
+
+        function shuffleDeck(array) {
+            for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[array[i], array[j]] = [array[j], array[i]]; }
+            return array;
+        }
+
+        function createFloatingHearts() {
+            const container = document.getElementById('hearts-container');
+            for (let i = 0; i < 20; i++) {
+                const heart = document.createElement('div'); heart.classList.add('heart'); heart.innerHTML = '♥';
+                heart.style.left = `${Math.random() * 100}vw`; heart.style.animationDuration = `${Math.random() * 5 + 5}s`;
+                heart.style.animationDelay = `${Math.random() * 5}s`; heart.style.fontSize = `${Math.random() * 1.5 + 0.5}rem`;
+                container.appendChild(heart);
+            }
+        }
+
+        elements.createRoomBtn.addEventListener('click', createRoom);
+        elements.joinRoomBtn.addEventListener('click', () => {
+            const roomId = elements.roomIdInput.value.trim().toUpperCase();
+            if (roomId) joinRoom(roomId);
+        });
+        elements.goHomeBtn.addEventListener('click', () => { stopHeartbeat(); window.location.reload(); });
+        elements.goHomeAfterGameBtn.addEventListener('click', () => { window.location.reload(); });
+        elements.rulesBtn.addEventListener('click', () => elements.rulesModal.classList.remove('hidden'));
+        elements.closeRulesBtn.addEventListener('click', () => elements.rulesModal.classList.add('hidden'));
+
+        window.addEventListener('beforeunload', leaveRoom);
+        window.onload = initializeGame;
+
+    </script>
+</body>
+</html>
