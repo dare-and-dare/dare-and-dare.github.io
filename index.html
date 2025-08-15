@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
@@ -9,9 +9,13 @@
     <link rel="icon" type="image/x-icon" href="images/heart_logo.png">
 
     <style>
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+
         body {
             font-family: 'Assistant', sans-serif;
-            overflow: hidden;
             background: linear-gradient(135deg, #4a0e2e 0%, #1d1d4e 100%);
             position: relative;
         }
@@ -61,14 +65,19 @@
         }
 
         .card {
-            width: 120px;
-            height: 170px;
+            width: 22vw;
+            height: 31vw;
+            max-width: 120px;
+            max-height: 170px;
+            min-width: 80px;
+            min-height: 114px;
             border-radius: 12px;
             cursor: pointer;
-            transition: all 0.3s ease-in-out;
+            transition: all 0.2s ease-in-out; /* Faster transition for snappy feel */
             user-select: none;
             position: relative;
             perspective: 1000px;
+            flex-shrink: 0;
         }
 
         .card-inner {
@@ -91,7 +100,7 @@
             backface-visibility: hidden;
             display: flex;
             flex-direction: column;
-            padding: 10px;
+            padding: 8px;
             border-radius: 12px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
             text-align: center;
@@ -108,9 +117,9 @@
 
             .card-front .card-type-header {
                 font-weight: 700;
-                font-size: 0.8rem;
-                padding-bottom: 5px;
-                margin-bottom: 5px;
+                font-size: 0.75rem;
+                padding-bottom: 4px;
+                margin-bottom: 4px;
                 width: 100%;
                 border-bottom: 1px solid;
             }
@@ -143,7 +152,7 @@
             }
 
         .card-front p {
-            font-size: 0.9rem;
+            font-size: clamp(0.7rem, 2.2vw, 0.9rem);
             word-wrap: break-word;
             line-height: 1.3;
         }
@@ -155,23 +164,20 @@
             border: 2px solid #fce7f3;
         }
 
+        /* NEW HOVER EFFECT FOR OVERLAPPED CARDS */
         body.is-my-turn #player-hand .card:hover {
             transform: translateY(-20px) scale(1.05);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-        }
-
-        body:not(.is-my-turn) #player-hand .card {
-            cursor: not-allowed;
-        }
-
-        body:not(.is-my-turn) #deck {
-            cursor: not-allowed;
+            z-index: 100;
         }
 
         #deck {
             position: relative;
-            width: 120px;
-            height: 170px;
+            width: 22vw;
+            height: 31vw;
+            max-width: 120px;
+            max-height: 170px;
+            min-width: 80px;
+            min-height: 114px;
         }
 
             #deck .card {
@@ -228,7 +234,7 @@
             border-radius: 9999px;
             color: white;
             font-size: 1rem;
-            z-index: 50;
+            z-index: 999;
             transition: all 0.5s ease-in-out;
             box-shadow: 0 4px 15px rgba(0,0,0,0.3);
             text-align: center;
@@ -257,12 +263,12 @@
             #opponent-hand .card {
                 position: absolute;
                 left: 50%;
-                bottom: 10px;
+                bottom: 0;
                 transform-origin: bottom center;
             }
     </style>
 </head>
-<body class="text-white flex flex-col items-center justify-center min-h-screen p-4">
+<body class="text-white flex flex-col items-center justify-center min-h-screen p-2 sm:p-4">
 
     <div id="background-logo"></div>
     <div id="hearts-container"></div>
@@ -272,6 +278,7 @@
         <div class="bg-gray-800 text-white p-8 rounded-2xl shadow-xl max-w-lg w-full border border-pink-500 relative">
             <h2 class="text-3xl font-bold text-pink-300 mb-4 text-center">איך משחקים?</h2>
             <div class="space-y-4 text-gray-300 max-h-[70vh] overflow-y-auto pr-2">
+                <p><strong>מטרת המשחק:</strong> להתחבר, ליהנות ולגלות דברים חדשים אחד על השנייה דרך שאלות, משימות וסודות.</p>
                 <div>
                     <h3 class="font-semibold text-pink-200 text-lg">מהלך התור:</h3>
                     <p>בכל תור, עומדת בפניך <strong>פעולה אחת</strong>: למשוך קלף מהקופה, או לשחק קלף מהיד שלך למרכז השולחן.</p>
@@ -298,7 +305,7 @@
     </div>
 
     <div id="home-screen" class="w-full h-full flex flex-col items-center justify-center text-center">
-        <h1 class="text-5xl font-bold text-pink-300 mb-4">חובה וחובה - גרסת הזוגות</h1>
+        <h1 class="text-4xl sm:text-5xl font-bold text-pink-300 mb-4">חובה וחובה - גרסת הזוגות</h1>
         <p class="text-gray-300 mb-6 max-w-md px-4">צרו חדר פרטי ושתפו את הקוד עם הפרטנר כדי להתחיל לשחק.</p>
         <div class="bg-gray-800/50 p-6 rounded-lg shadow-lg w-full max-w-sm">
             <p id="auth-status" class="text-yellow-400 mb-4 text-sm">מתחבר...</p>
@@ -327,7 +334,7 @@
         </div>
     </div>
 
-    <div id="game-container" class="hidden w-full h-full flex-col items-center justify-between max-w-7xl mx-auto">
+    <div id="game-container" class="hidden w-full h-full flex flex-col items-center max-w-7xl mx-auto">
         <div id="opponent-left-modal" class="hidden fixed inset-0 z-20 flex items-center justify-center bg-gray-900/80 backdrop-blur-sm">
             <div class="bg-gray-800 p-8 rounded-lg shadow-xl text-center border border-red-500">
                 <h3 class="text-2xl font-bold mb-4 text-red-400">הפרטנר התנתק</h3>
@@ -336,34 +343,32 @@
             </div>
         </div>
 
-        <div class="absolute top-4 right-4 bg-gray-800/50 p-3 rounded-lg shadow-lg text-center">
-            <h2 class="text-lg font-bold mb-2">קוד חדר</h2>
-            <div id="room-id-display" class="bg-gray-700 text-pink-300 font-mono px-4 py-2 rounded-md text-xl tracking-widest"></div>
-        </div>
-
-        <div id="player-info" class="absolute top-4 left-4 bg-gray-800/50 p-3 rounded-lg shadow-lg text-left text-sm">
-            <h2 class="text-lg font-bold mb-2 text-center">שחקנים</h2>
-            <div><strong>את/ה:</strong> <span id="your-name" class="font-mono text-blue-300"></span></div>
-            <div><strong>פרטנר:</strong> <span id="opponent-name" class="font-mono text-red-300">ממתין...</span></div>
-        </div>
-
-        <div id="turn-indicator" class="absolute top-6 text-xl font-bold text-yellow-300"></div>
-
-        <div id="opponent-hand" class="h-48 flex justify-center items-start p-4"></div>
-        <div id="play-area" class="w-full h-64 bg-gray-800/50 rounded-2xl border-2 border-dashed border-gray-600 flex items-center justify-center p-4 my-4"></div>
-
-        <div class="w-full flex justify-between items-end p-4">
-            <div id="player-hand" class="h-48 flex-grow flex justify-center items-end space-x-2"></div>
-            <div id="deck-area" class="flex flex-col items-center">
-                <div id="deck" class="mb-2"></div>
-                <div id="deck-counter" class="text-lg font-semibold">0 קלפים</div>
+        <header class="w-full p-1 sm:p-2 flex flex-wrap justify-between items-center gap-x-2 gap-y-1 text-xs sm:text-sm flex-shrink-0">
+            <div class="bg-gray-800/50 p-2 sm:p-3 rounded-lg shadow-lg text-left order-1 flex-shrink-0">
+                <h2 class="text-base sm:text-lg font-bold mb-1 text-center">שחקנים</h2>
+                <div><strong>את/ה:</strong> <span id="your-name" class="font-mono text-blue-300"></span></div>
+                <div><strong>פרטנר:</strong> <span id="opponent-name" class="font-mono text-red-300">ממתין...</span></div>
             </div>
-        </div>
-    </div>
+            <div id="turn-indicator" class="w-full text-center text-base sm:text-xl font-bold text-yellow-300 order-3 sm:order-2 sm:w-auto flex-1 px-2"></div>
+            <div class="bg-gray-800/50 p-2 sm:p-3 rounded-lg shadow-lg text-center order-2 sm:order-3 flex-shrink-0">
+                <h2 class="text-base sm:text-lg font-bold mb-1">קוד חדר</h2>
+                <div id="room-id-display" class="bg-gray-700 text-pink-300 font-mono px-3 py-1 sm:px-4 sm:py-2 rounded-md text-base sm:text-xl tracking-widest"></div>
+            </div>
+        </header>
 
-    <footer class="fixed bottom-0 left-0 w-full p-2 text-center text-gray-400 text-sm">
-        נוצר על ידי לב בשביל הילית
-    </footer>
+        <div id="opponent-hand" class="h-32 sm:h-48 w-full flex-shrink-0"></div>
+
+        <main id="play-area" class="w-full flex-grow bg-gray-800/50 rounded-2xl border-2 border-dashed border-gray-600 flex items-center justify-center p-2 my-2 relative"></main>
+
+        <footer id="bottom-bar" class="w-full flex justify-between items-end p-1 sm:p-2 flex-shrink-0 h-44 sm:h-48">
+            <div id="player-hand" class="flex-grow h-full flex justify-center items-end">
+            </div>
+            <div id="deck-area" class="flex flex-col items-center flex-shrink-0 pl-2">
+                <div id="deck" class="mb-2"></div>
+                <div id="deck-counter" class="text-base sm:text-lg font-semibold">0 קלפים</div>
+            </div>
+        </footer>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
@@ -453,7 +458,7 @@
                 players: { [userId]: { name: playerName, hand: [], lastSeen: new Date() } },
                 deck: deck, playArea: [], hostId: userId, createdAt: new Date(),
                 turn: { currentPlayerId: userId, turnNumber: 1 },
-                gameState: 'playing' // Initial game state
+                gameState: 'playing'
             };
             try {
                 await setDoc(gameRef, gameData);
@@ -627,9 +632,21 @@
                 elements.turnIndicator.textContent = "ממתינים לשחקן נוסף...";
             }
 
-            if (playerState) playerState.hand.forEach(cardData => {
+            // DYNAMIC HAND RENDERING LOGIC
+            const handCount = playerState ? playerState.hand.length : 0;
+            let marginLeft = '8px'; // Default spacing for 1-3 cards
+            if (handCount === 4) {
+                marginLeft = '-50px';
+            } else if (handCount >= 5) {
+                marginLeft = '-70px';
+            }
+
+            if (playerState) playerState.hand.forEach((cardData, index) => {
                 const cardElement = createCardElement(cardData, false);
                 cardElement.addEventListener('click', () => playCard(cardData.instanceId));
+                if (index > 0) {
+                    cardElement.style.marginLeft = marginLeft;
+                }
                 elements.playerHand.appendChild(cardElement);
             });
 
@@ -689,14 +706,13 @@
                 if (cardToPlay) {
                     const newHand = playerHand.filter(c => c.instanceId !== cardInstanceId);
                     const opponentId = Object.keys(gameData.players).find(id => id !== userId);
-                    const opponentHand = gameData.players[opponentId].hand;
+                    const opponentHand = opponentId ? gameData.players[opponentId].hand : [];
 
                     let updates = {
                         [`players.${userId}.hand`]: newHand,
                         playArea: arrayUnion(cardToPlay)
                     };
 
-                    // Check for game over condition
                     if (newHand.length === 0 && gameData.deck.length === 0 && opponentHand.length === 0) {
                         updates.gameState = 'finished';
                     }
