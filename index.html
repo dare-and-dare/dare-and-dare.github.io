@@ -416,7 +416,7 @@
 
         const fallbackCards = [
             { text: "מהו הזיכרון המשותף הראשון שאתם זוכרים?", type: CARD_TYPES.QUESTION }, { text: "מה הדבר שהכי הצחיק אתכם שעשיתם יחד?", type: CARD_TYPES.QUESTION }, { text: "מהו החלום הכי גדול שלך כרגע?", type: CARD_TYPES.QUESTION }, { text: "אם היית חיה, איזו חיה היית בוחר/ת להיות?", type: CARD_TYPES.QUESTION }, { text: "מהו הדבר שאת/ה הכי מעריך/ה בי?", type: CARD_TYPES.QUESTION },
-            { text: "עסה את כפות הרגליים של הפרטנר למשך דקה.", type: CARD_TYPES.ASSIGNMENT }, { text: "לחש 3 דברים שאת/ה אוהב/ת בו/בה באוזן.", type: CARD_TYPES.ASSIGNMENT }, { text: "הכן/הכיני לפרטנר משקה שהוא/היא אוהב/ת.", type: CARD_TYPES.ASSIGNMENT }, { text: "בחרו שיר ורקדו לצליליו כאילו אף אחד לא רואה.", type: CARD_TYPES.ASSIGNMENT }, { text: "תן/י לפרטנר נשיקה במקום הכי לא צפוי.", type: CARD_TYPES.ASSIGNMENT },
+            { text: "עסה את כפות הרגליים של הפרטנר למשך דקה.", type: CARD_TYPES.ASSIGNMENT }, { text: "לחש 3 דברים שאת/ה אוהב/ת בו/בה באוזן.", type: CARD_TYPES.ASSIGNMENT }, { text: "הסתכל/י לבת הזוג בעיניים למשך דקה", type: CARD_TYPES.ASSIGNMENT }, { text: "בחרו שיר ורקדו לצליליו כאילו אף אחד לא רואה.", type: CARD_TYPES.ASSIGNMENT }, { text: "תן/י לפרטנר נשיקה במקום הכי לא צפוי.", type: CARD_TYPES.ASSIGNMENT },
             { text: "גע/י בשיער של הפרטנר בעדינות מבלי שיבחין/תבחין.", type: CARD_TYPES.SECRET }, { text: "החבא/החביאי פתק אהבה קטן בכיס של הפרטנר.", type: CARD_TYPES.SECRET }, { text: "שלח/י הודעה מתוקה לטלפון של הפרטנר.", type: CARD_TYPES.SECRET }, { text: "החמא/י לפרטנר על משהו כשהוא/היא לא מצפה.", type: CARD_TYPES.SECRET }, { text: "שים/שימי את היד על הלב שלך כשהפרטנר מסתכל עליך.", type: CARD_TYPES.SECRET }
         ];
 
@@ -432,7 +432,7 @@
         }
 
         async function generateCards() {
-            const prompt = `צור 30 קלפים למשחק זוגי בעברית, בפורמט JSON. כל אובייקט בקלף חייב להכיל 'text' ו-'type'. השתמש בסוגים: "שאלה", "משימה", ו"סוד". צור בערך 10 קלפים מכל סוג. "שאלה" - שאלות שמעוררות שיחה. "משימה" - משימות רומנטיות או שובבות לביצוע יחד. "סוד" - משימות שצריך לבצע בלי שהשני ישים לב. כל טקסט חייב להיות קצר, עד 15 מילים.`;
+            const prompt = `צור 30 קלפים למשחק זוגי בעברית, בפורמט JSON. כל אובייקט בקלף חייב להכיל 'text' ו-'type'. השתמש בסוגים: "שאלה", "משימה", ו"סוד". צור בערך 10 קלפים מכל סוג. "שאלה" - שאלות שמעוררות שיחה רומנטית או מרגשת. "משימה" - משימות רומנטיות או שובבות לביצוע יחד. "סוד" - משימות שצריך לבצע בלי שהשני ישים לב, דברים שובבים ורומנטיים. כל טקסט חייב להיות קצר, עד 15 מילים.`;
             const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json", responseSchema: { type: "ARRAY", items: { type: "OBJECT", properties: { "text": { "type": "STRING" }, "type": { "type": "STRING" } }, required: ["text", "type"] } } } };
             const apiKey = "AIzaSyDPHa7RzXYbgaVY-lCFwW0JE2Mh3OptJ6Y";
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
