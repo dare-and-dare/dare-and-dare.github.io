@@ -201,9 +201,18 @@
             position: relative;
         }
 
-            #play-area .card {
-                position: absolute;
+        /* === Added rule for mobile phones === */
+        @media (max-width: 639px) { /* This targets screens smaller than 640px (Tailwind's 'sm' breakpoint) */
+            #play-area {
+                flex-grow: 0; /* Prevents the area from growing aggressively */
+                height: 30vh; /* Sets a specific height relative to the screen height */
             }
+        }
+        /* ==================================== */
+
+        #play-area .card {
+            position: absolute;
+        }
 
         .loader {
             border: 4px solid #f3f3f3;
