@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF--8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>חובה וחובה</title>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -274,6 +274,10 @@
                 bottom: 0;
                 transform-origin: bottom center;
             }
+
+        #action-timer.show {
+            opacity: 1;
+        }
     </style>
 </head>
 <body class="text-white flex flex-col items-center justify-center min-h-screen p-2 sm:p-4">
@@ -320,7 +324,17 @@
             <input id="player-name-input" type="text" placeholder="הכניסו את שמכם" class="bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white w-full mb-3 text-center text-lg">
             <input id="room-id-input" type="text" placeholder="הכניסו קוד חדר" class="bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white w-full mb-3 text-center text-lg">
             <button id="join-room-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg w-full mb-3 disabled:opacity-50 disabled:cursor-not-allowed" disabled>הצטרף לחדר</button>
-            <button id="create-room-btn" class="bg-pink-600 hover:bg-pink-700 text-white font-bold py-3 px-4 rounded-lg w-full disabled:opacity-50 disabled:cursor-not-allowed" disabled>צור חדר<p style="font-size: 12px">(לעיתים ייקח עד 10 שניות)</p></button>
+
+            <div class="grid grid-cols-2 gap-2">
+                <button id="create-room-premade-btn" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-3 sm:py-3 sm:px-4 rounded-lg w-full disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm sm:text-base" disabled>
+                    צור חדר מהיר
+                </button>
+                <button id="create-room-ai-btn" class="bg-pink-600 hover:bg-pink-700 text-white font-bold py-2 px-3 sm:py-3 sm:px-4 rounded-lg w-full disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm sm:text-base" disabled>
+                    צור חדר עם קלפי AI
+                    <p class="text-xs font-normal opacity-80">(יכול לקחת עד 15 שניות)</p>
+                </button>
+            </div>
+
             <button id="rules-btn" class="mt-4 text-pink-200 bg-pink-500/10 hover:bg-pink-500/20 border border-pink-500/30 font-semibold py-2 px-6 rounded-lg w-full transition-colors">
                 איך משחקים?
             </button>
@@ -330,8 +344,8 @@
     <div id="ai-loading-overlay" class="hidden fixed inset-0 z-20 flex-col items-center justify-center bg-gray-900/80 backdrop-blur-sm">
         <div class="bg-gray-800/80 p-8 rounded-lg shadow-xl text-center border border-pink-500">
             <div class="loader mb-4 mx-auto"></div>
-            <h2 class="text-2xl font-bold text-pink-300">יוצר קלפים בעזרת בינה מלאכותית...</h2>
-            <p id="loading-timer" class="text-gray-400 mt-2">זמן שחלף: 0ש</p>
+            <h2 id="loading-text" class="text-2xl font-bold text-pink-300">יוצר חדר...</h2>
+            <p id="loading-timer" class="text-gray-400 mt-2"></p>
         </div>
     </div>
 
@@ -378,6 +392,14 @@
         </footer>
     </div>
 
+    <div id="action-timer" class="hidden fixed bottom-24 right-4 sm:right-6 z-10 bg-gray-800/80 p-3 rounded-lg shadow-lg text-center border border-pink-500/50 transition-opacity duration-300 opacity-0 backdrop-blur-sm">
+        <div id="timer-display" class="font-mono text-2xl text-yellow-300 mb-2">00:00</div>
+        <div class="flex gap-2">
+            <button id="timer-toggle-btn" class="bg-green-600 hover:bg-green-700 w-12 h-8 flex items-center justify-center rounded text-lg">▶</button>
+            <button id="timer-stop-btn" class="bg-red-600 hover:bg-red-700 w-12 h-8 flex items-center justify-center rounded text-lg">⏹</button>
+        </div>
+    </div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -392,26 +414,35 @@
             appId: "1:337097539085:web:e8b516719a14d14eec5f44"
         };
 
-        let app, auth, db, userId, gameUnsubscribe = null, currentRoomId = null, gameHasStartedWithTwoPlayers = false, heartbeatInterval = null, loadingTimerInterval = null, toastTimeout = null;
+        let app, auth, db, userId, gameUnsubscribe = null, currentRoomId = null, gameHasStartedWithTwoPlayers = false, heartbeatInterval = null, loadingTimerInterval = null, toastTimeout = null, isAIAvailable = true;
+        let timerInterval = null, totalSeconds = 0, remainingSeconds = 0, isTimerRunning = false, lastPlayedCardId = null;
 
         const CARD_TYPES = { QUESTION: 'שאלה', ASSIGNMENT: 'משימה', SECRET: 'סוד' };
 
         const elements = {
             deck: document.getElementById('deck'), deckCounter: document.getElementById('deck-counter'),
             playerHand: document.getElementById('player-hand'), opponentHand: document.getElementById('opponent-hand'),
-            playArea: document.getElementById('play-area'), createRoomBtn: document.getElementById('create-room-btn'),
+            playArea: document.getElementById('play-area'),
+            createRoomAiBtn: document.getElementById('create-room-ai-btn'),
+            createRoomPremadeBtn: document.getElementById('create-room-premade-btn'),
             joinRoomBtn: document.getElementById('join-room-btn'), roomIdInput: document.getElementById('room-id-input'),
             roomIdDisplay: document.getElementById('room-id-display'), authStatus: document.getElementById('auth-status'),
             yourNameSpan: document.getElementById('your-name'), opponentNameSpan: document.getElementById('opponent-name'),
             opponentLeftModal: document.getElementById('opponent-left-modal'), goHomeBtn: document.getElementById('go-home-btn'),
             homeScreen: document.getElementById('home-screen'), gameContainer: document.getElementById('game-container'),
-            aiLoadingOverlay: document.getElementById('ai-loading-overlay'), loadingTimer: document.getElementById('loading-timer'),
+            aiLoadingOverlay: document.getElementById('ai-loading-overlay'),
+            loadingText: document.getElementById('loading-text'),
+            loadingTimer: document.getElementById('loading-timer'),
             playerNameInput: document.getElementById('player-name-input'), rulesBtn: document.getElementById('rules-btn'),
             rulesModal: document.getElementById('rules-modal'), closeRulesBtn: document.getElementById('close-rules-btn'),
             turnIndicator: document.getElementById('turn-indicator'),
             toast: document.getElementById('toast-notification'),
             gameOverModal: document.getElementById('game-over-modal'),
             goHomeAfterGameBtn: document.getElementById('go-home-after-game-btn'),
+            actionTimer: document.getElementById('action-timer'),
+            timerDisplay: document.getElementById('timer-display'),
+            timerToggleBtn: document.getElementById('timer-toggle-btn'),
+            timerStopBtn: document.getElementById('timer-stop-btn'),
         };
 
         const fallbackCards = [
@@ -431,6 +462,12 @@
             }, duration);
         }
 
+        function updateAIButtonStatus() {
+            if (!isAIAvailable) {
+                elements.createRoomAiBtn.disabled = true;
+            }
+        }
+
         async function generateCards() {
             const prompt = `צור 30 קלפים למשחק זוגי בעברית, בפורמט JSON. כל אובייקט בקלף חייב להכיל 'text' ו-'type'. השתמש בסוגים: "שאלה", "משימה", ו"סוד". צור בערך 10 קלפים מכל סוג. "שאלה" - שאלות שמעוררות שיחה רומנטית או מרגשת. "משימה" - משימות רומנטיות או שובבות לביצוע יחד. "סוד" - משימות שצריך לבצע בלי שהשני ישים לב, דברים שובבים ורומנטיים. כל טקסט חייב להיות קצר, עד 15 מילים.`;
             const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json", responseSchema: { type: "ARRAY", items: { type: "OBJECT", properties: { "text": { "type": "STRING" }, "type": { "type": "STRING" } }, required: ["text", "type"] } } } };
@@ -445,20 +482,42 @@
                 return cards;
             } catch (error) {
                 console.warn("AI card generation failed, using fallback cards.", error);
+                isAIAvailable = false;
+                updateAIButtonStatus();
+                showToast("יצירת קלפים עם AI נכשלה. נוצר חדר רגיל.", 'warning');
                 return fallbackCards;
             }
         }
 
-        async function createRoom() {
+        async function createRoom(useAI = false) {
             const playerName = elements.playerNameInput.value.trim();
             if (!playerName) { showToast("אנא הכניסו את שמכם.", 'warning'); return; }
             if (!userId) return;
-            elements.createRoomBtn.disabled = true; elements.joinRoomBtn.disabled = true;
-            elements.aiLoadingOverlay.classList.remove('hidden'); elements.aiLoadingOverlay.classList.add('flex');
+
+            elements.createRoomAiBtn.disabled = true;
+            elements.createRoomPremadeBtn.disabled = true;
+            elements.joinRoomBtn.disabled = true;
+
+            elements.aiLoadingOverlay.classList.remove('hidden');
+            elements.aiLoadingOverlay.classList.add('flex');
+
             let seconds = 0;
-            loadingTimerInterval = setInterval(() => { seconds++; elements.loadingTimer.textContent = `זמן שחלף: ${seconds}ש`; }, 1000);
-            const cards = await generateCards();
-            clearInterval(loadingTimerInterval); loadingTimerInterval = null;
+            let cards;
+
+            if (useAI) {
+                elements.loadingText.textContent = "יוצר קלפים בעזרת בינה מלאכותית...";
+                elements.loadingTimer.textContent = `זמן שחלף: 0ש`;
+                loadingTimerInterval = setInterval(() => { seconds++; elements.loadingTimer.textContent = `זמן שחלף: ${seconds}ש`; }, 1000);
+                cards = await generateCards();
+                clearInterval(loadingTimerInterval);
+                loadingTimerInterval = null;
+            } else {
+                elements.loadingText.textContent = "יוצר חדר מהיר...";
+                elements.loadingTimer.textContent = '';
+                cards = fallbackCards;
+                await new Promise(resolve => setTimeout(resolve, 500)); // Short delay for smooth UI
+            }
+
             const roomId = generateRoomId();
             const gameRef = doc(db, 'games', roomId);
             const deck = shuffleDeck(cards.map((card, index) => ({ id: index + 1, ...card, instanceId: crypto.randomUUID() })));
@@ -473,8 +532,13 @@
                 joinRoom(roomId);
             } catch (error) {
                 console.error("Error creating room: ", error);
-                elements.aiLoadingOverlay.classList.add('hidden'); elements.aiLoadingOverlay.classList.remove('flex');
-                elements.createRoomBtn.disabled = false; elements.joinRoomBtn.disabled = false;
+                elements.aiLoadingOverlay.classList.add('hidden');
+                elements.aiLoadingOverlay.classList.remove('flex');
+
+                updateAIButtonStatus(); // Will keep AI button disabled if it failed
+                if (isAIAvailable) elements.createRoomAiBtn.disabled = false;
+                elements.createRoomPremadeBtn.disabled = false;
+                elements.joinRoomBtn.disabled = false;
             }
         }
 
@@ -490,7 +554,9 @@
                     if (user) {
                         userId = user.uid;
                         elements.authStatus.textContent = "מחובר!"; elements.authStatus.style.color = '#a7f3d0';
-                        elements.createRoomBtn.disabled = false; elements.joinRoomBtn.disabled = false;
+                        elements.createRoomAiBtn.disabled = false;
+                        elements.createRoomPremadeBtn.disabled = false;
+                        elements.joinRoomBtn.disabled = false;
                     } else {
                         signInAnonymously(auth).catch(error => {
                             elements.authStatus.textContent = "החיבור נכשל!"; elements.authStatus.style.color = '#f87171';
@@ -684,6 +750,24 @@
                 elements.playArea.appendChild(cardElement);
             });
             renderDeck(gameData.deck.length, playerIds.length);
+
+            // TIMER LOGIC BASED ON LAST PLAYED CARD
+            const lastCardInPlayArea = gameData.playArea.length > 0 ? gameData.playArea[gameData.playArea.length - 1] : null;
+
+            if (lastCardInPlayArea && lastCardInPlayArea.instanceId !== lastPlayedCardId) {
+                // A new card has been played since the last render
+                lastPlayedCardId = lastCardInPlayArea.instanceId;
+                const timeDuration = parseTimeFromCardText(lastCardInPlayArea.text);
+                if (timeDuration > 0) {
+                    setupAndShowTimer(timeDuration);
+                } else {
+                    stopTimer();
+                }
+            } else if (!lastCardInPlayArea && lastPlayedCardId !== null) {
+                // The play area was cleared or the game just started
+                lastPlayedCardId = null;
+                stopTimer();
+            }
         }
 
         async function drawCard() {
@@ -797,6 +881,67 @@
             }
         }
 
+        function parseTimeFromCardText(text) {
+            if (text.includes("למשך דקה")) return 60;
+            const minuteRegex = /(\d+)\s+דקות?/i;
+            const secondRegex = /(\d+)\s+שניות?/i;
+            const minuteMatch = text.match(minuteRegex);
+            if (minuteMatch && minuteMatch[1]) return parseInt(minuteMatch[1], 10) * 60;
+            const secondMatch = text.match(secondRegex);
+            if (secondMatch && secondMatch[1]) return parseInt(secondMatch[1], 10);
+            return 0;
+        }
+
+        function formatTime(seconds) {
+            const min = Math.floor(seconds / 60);
+            const sec = seconds % 60;
+            return `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+        }
+
+        function updateTimerDisplay() {
+            elements.timerDisplay.textContent = formatTime(remainingSeconds);
+        }
+
+        function stopTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = null;
+            isTimerRunning = false;
+            elements.actionTimer.classList.remove('show');
+            setTimeout(() => elements.actionTimer.classList.add('hidden'), 300);
+            elements.timerToggleBtn.innerHTML = '▶';
+        }
+
+        function toggleTimer() {
+            if (isTimerRunning) { // Pause
+                clearInterval(timerInterval);
+                isTimerRunning = false;
+                elements.timerToggleBtn.innerHTML = '▶';
+            } else { // Start or Resume
+                isTimerRunning = true;
+                elements.timerToggleBtn.innerHTML = '⏸';
+                if (remainingSeconds <= 0) return stopTimer(); // Don't start a finished timer
+                timerInterval = setInterval(() => {
+                    remainingSeconds--;
+                    updateTimerDisplay();
+                    if (remainingSeconds <= 0) {
+                        stopTimer();
+                        showToast("הזמן נגמר!", 'success');
+                    }
+                }, 1000);
+            }
+        }
+
+        function setupAndShowTimer(durationInSeconds) {
+            if (timerInterval) stopTimer();
+            totalSeconds = durationInSeconds;
+            remainingSeconds = durationInSeconds;
+            isTimerRunning = false;
+            updateTimerDisplay();
+            elements.timerToggleBtn.innerHTML = '▶';
+            elements.actionTimer.classList.remove('hidden');
+            setTimeout(() => elements.actionTimer.classList.add('show'), 50);
+        }
+
         function generateRoomId() { return Math.random().toString(36).substring(2, 8).toUpperCase(); }
 
         function shuffleDeck(array) {
@@ -814,7 +959,8 @@
             }
         }
 
-        elements.createRoomBtn.addEventListener('click', createRoom);
+        elements.createRoomAiBtn.addEventListener('click', () => createRoom(true));
+        elements.createRoomPremadeBtn.addEventListener('click', () => createRoom(false));
         elements.joinRoomBtn.addEventListener('click', () => {
             const roomId = elements.roomIdInput.value.trim().toUpperCase();
             if (roomId) joinRoom(roomId);
@@ -823,6 +969,8 @@
         elements.goHomeAfterGameBtn.addEventListener('click', () => { window.location.reload(); });
         elements.rulesBtn.addEventListener('click', () => elements.rulesModal.classList.remove('hidden'));
         elements.closeRulesBtn.addEventListener('click', () => elements.rulesModal.classList.add('hidden'));
+        elements.timerToggleBtn.addEventListener('click', toggleTimer);
+        elements.timerStopBtn.addEventListener('click', stopTimer);
 
         window.addEventListener('beforeunload', leaveRoom);
         window.onload = initializeGame;
